@@ -1,4 +1,5 @@
 # ffmveg
+## Will never be open to the public. Will forever be in a prviate repo due to me just wanting to make fixes, while in class. 
 Made by [Couleur](https://github.com/couleurm). Fixes and qol changes are made by [Me](https://github.com/Vramuser)!!
 <br>
 How to install: 
