@@ -1,5 +1,5 @@
 # ffmveg
-Made by [Couleur](https://github.com/couleurm). Fixes are made by Me!
+Made by [Couleur](https://github.com/couleurm). Fixes and qol changes are made by [Me](https://github.com/Vramuser)!!
 <br>
 How to install: 
 1. Make a folder in `Documents` titled/named `Vegas Script Menu`
