@@ -1,4 +1,4 @@
-# ffmveg
+# ffmveg-revamp
 Made by [Couleur](https://github.com/couleurm). Fixes and qol changes are made by [Me](https://github.com/Vramuser)!!
 <br>
 How to install: 
