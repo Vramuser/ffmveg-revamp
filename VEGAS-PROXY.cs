@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using ScriptPortal.Vegas;
 using System.Diagnostics;
@@ -17,13 +17,11 @@ class EntryPoint
         string ffmpeg_path = "ffmpeg.exe";
         string ff_base_args = "-loglevel error -stats";
         string ff_filter_args = "-vf fps=60,scale=960:540:flags=neighbor";
-        //string ff_video_args = "-vcodec h264_nvenc -profile:v high -preset fast -qmin 24 -qmax 24 -c:a copy";
         string ff_video_args = "-c:v libx264 -tune fastdecode -preset veryfast -g 60 -x264-params bframes=0 -crf 25 -forced-idr 1 -strict -2 -maxrate 100M -bufsize 10M";
         string ff_audio_args = "-an";
 
         if (!File.Exists(ffmpeg_path) && (GetFullPath(ffmpeg_path) == null))
         {
-            // if you're using it from PATH be sure to add .exe at  the end of the string
             MessageBox.Show(
                 "VEGAS-PROXY: Provided ffmpeg.exe path does not exist\n\nIs it not installed or not in PATH?\n\n See https://ctt.cx/ffmpeg for install instructions");
             return;
@@ -79,12 +77,10 @@ class EntryPoint
                                 if ((new System.IO.FileInfo(outPath).Length) == 0)
                                 {
                                     MessageBox.Show("Deleting empty corrupted file: " + outPath);
-                                    // File.Delete(outPath)
                                 }
                             }
                             else
                             {
-                                // you can't imagine how scuffed the whatever c# version vegas runs this with
                                 string command = ffmpeg_path + " " + ff_base_args + " -i \"" + currentMediaPath + "\" " +
                                                  " " + ff_filter_args + " " + ff_video_args + " " + ff_audio_args +
                                                  " \"" + outPath + "\"";
@@ -107,7 +103,7 @@ class EntryPoint
             MessageBox.Show("Selected videos on your timeline before running VEGAS-PROXY");
         }
     }
-    // http://stackoverflow.com/questions/3855956/ddg#3856090
+    
     public static string GetFullPath(string fileName)
     {
         if (File.Exists(fileName))
@@ -123,28 +119,36 @@ class EntryPoint
         return null;
     }
 
-    void ReplaceVideo(VideoEvent vidEvent, string NewVid)
+    void ReplaceVideo(VideoEvent vidEvent, string newMediaPath)
     {
-        Media newMedia = new Media(NewVid);
+        Media newMedia = new Media(newMediaPath);
         MediaStream newMediaStream = newMedia.GetVideoStreamByIndex(0);
 
-        // Check if there's an existing take
-        if (vidEvent.Takes.Count > 0)
+        // Saves the trim
+        Timecode originalOffset = vidEvent.ActiveTake.Offset;
+        Timecode eventLength = vidEvent.Length;
+
+        // Remove all existing takes
+        while (vidEvent.Takes.Count > 0)
         {
-            // Remove existing take
             vidEvent.Takes.RemoveAt(0);
         }
 
-        // Add new take
-        vidEvent.AddTake(newMediaStream, true);
-        // Media newMedia = new Media(NewVid);
-        // MediaStream newMediaStream = newMedia.GetVideoStreamByIndex(0);
-        // vidEvent.AddTake(newMediaStream, true);
+        // Add a new take using the new media stream
+        Take newTake = vidEvent.AddTake(newMediaStream, true);
+
+        // Matches the offset aka video time stamp
+        newTake.Offset = originalOffset;
+        vidEvent.Length = eventLength;
+
+        Console.WriteLine(string.Format("Replaced media with: {0}", newMediaPath));
+        Console.WriteLine(string.Format("Preserved trim: Offset={0}, Length={1}", originalOffset, eventLength));
     }
+
+
 
     void HideFile(string Filepath)
     {
-
         FileAttributes attributes = File.GetAttributes(Filepath);
         File.SetAttributes(Filepath, File.GetAttributes(Filepath) | FileAttributes.Hidden);
     }
