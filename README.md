@@ -10,3 +10,8 @@ To make it easier to use the script. Add it to the toolbar.
 Double click btw! 
 ![ToolBar](https://github.com/user-attachments/assets/825a3f27-39bf-45db-b92b-4ebf77c51bd5)
 
+--------------
+TODO:
+- Toggle if no clips are selected to all Proxy or OG clip.
+- Progress bar
+- GUI (not a priority)
