@@ -12,6 +12,8 @@ Double click btw!
 
 --------------
 TODO:
-- Toggle if no clips are selected to all Proxy or OG clip.
+<br>
+~~- Toggle if no clips are selected to all Proxy or OG clip.~~
 - Progress bar
 - GUI (not a priority)
+    
