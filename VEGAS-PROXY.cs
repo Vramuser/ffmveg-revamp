@@ -10,7 +10,7 @@ class EntryPoint
     public void FromVegas(Vegas vegas)
     {
         string global_output_folder = "";
-        bool only_selected = false;
+        bool only_selected = true; //Replaces or makes it into a proxy when selected
         bool hide_proxy_files = true;
 
         string proxy_file_prefix = "PROXY-";
@@ -26,71 +26,64 @@ class EntryPoint
                 "VEGAS-PROXY: Provided ffmpeg.exe path does not exist\n\nIs it not installed or not in PATH?\n\n See https://ctt.cx/ffmpeg for install instructions");
             return;
         }
+
         if (global_output_folder != "" && !Directory.Exists(global_output_folder))
         {
             MessageBox.Show("Provided global output folder `" + global_output_folder + "` does not exist, creating it");
             Directory.CreateDirectory(global_output_folder);
         }
+
         int ran = 0;
         foreach (Track track in vegas.Project.Tracks)
         {
             if (track.IsValid() && track.IsVideo() && (only_selected || track.Selected))
             {
-
                 foreach (TrackEvent trackEvent in track.Events)
                 {
+                    if (!trackEvent.Selected) continue; // Skip unselected events
 
                     if (trackEvent.IsVideo())
                     {
-
                         VideoEvent videoEvent = (VideoEvent)trackEvent;
                         string currentMediaPath = Path.GetFullPath(videoEvent.ActiveTake.MediaPath);
                         string Filename = Path.GetFileName(currentMediaPath);
-                        string DirectoryPath; 
-                        if (global_output_folder == ""){
-                            DirectoryPath = Path.GetDirectoryName(currentMediaPath);
-                        }
-                        else {
-                            DirectoryPath = global_output_folder;
-                        }
+                        string DirectoryPath = global_output_folder == "" ? Path.GetDirectoryName(currentMediaPath) : global_output_folder;
 
                         if (!File.Exists(currentMediaPath))
                         {
                             continue;
                         }
 
-                        if (Filename.StartsWith(proxy_file_prefix)) // we are already dealing with a proxied file
+                        if (Filename.StartsWith(proxy_file_prefix)) // Already a proxied file
                         {
-                            string oldPath =
-                                DirectoryPath + Path.DirectorySeparatorChar + Regex.Replace(Filename, ("^" + proxy_file_prefix), "");
-
+                            string oldPath = DirectoryPath + Path.DirectorySeparatorChar + Regex.Replace(Filename, ("^" + proxy_file_prefix), "");
                             ran += 1;
                             ReplaceVideo(videoEvent, oldPath);
                         }
                         else
                         {
-
                             string outPath = DirectoryPath + Path.DirectorySeparatorChar + proxy_file_prefix + Filename;
 
                             if (File.Exists(outPath))
                             {
-                                if ((new System.IO.FileInfo(outPath).Length) == 0)
+                                if ((new FileInfo(outPath).Length) == 0)
                                 {
                                     MessageBox.Show("Deleting empty corrupted file: " + outPath);
+                                    File.Delete(outPath);
                                 }
                             }
                             else
                             {
-                                string command = ffmpeg_path + " " + ff_base_args + " -i \"" + currentMediaPath + "\" " +
-                                                 " " + ff_filter_args + " " + ff_video_args + " " + ff_audio_args +
+                                string command = ffmpeg_path + " " + ff_base_args + " -i \"" + currentMediaPath + "\" " + 
+                                                 " " + ff_filter_args + " " + ff_video_args + " " + ff_audio_args + 
                                                  " \"" + outPath + "\"";
-
                                 SmoothieInit(command);
                             }
 
                             ran += 1;
                             ReplaceVideo(videoEvent, outPath);
-                            if (hide_proxy_files){
+                            if (hide_proxy_files)
+                            {
                                 HideFile(outPath);
                             }
                         }
@@ -98,12 +91,13 @@ class EntryPoint
                 }
             }
         }
+
         if (ran == 0)
         {
-            MessageBox.Show("Selected videos on your timeline before running VEGAS-PROXY");
+            MessageBox.Show("No selected videos to process. Highlight the clips on your timeline before running VEGAS-PROXY.");
         }
     }
-    
+
     public static string GetFullPath(string fileName)
     {
         if (File.Exists(fileName))
@@ -124,7 +118,7 @@ class EntryPoint
         Media newMedia = new Media(newMediaPath);
         MediaStream newMediaStream = newMedia.GetVideoStreamByIndex(0);
 
-        // Saves the trim
+        // Save the current trim information
         Timecode originalOffset = vidEvent.ActiveTake.Offset;
         Timecode eventLength = vidEvent.Length;
 
@@ -137,15 +131,13 @@ class EntryPoint
         // Add a new take using the new media stream
         Take newTake = vidEvent.AddTake(newMediaStream, true);
 
-        // Matches the offset aka video time stamp
+        // Reapply the original offset and length to the new take
         newTake.Offset = originalOffset;
         vidEvent.Length = eventLength;
 
-        Console.WriteLine(string.Format("Replaced media with: {0}", newMediaPath));
-        Console.WriteLine(string.Format("Preserved trim: Offset={0}, Length={1}", originalOffset, eventLength));
+        Console.WriteLine("Replaced media with: " + newMediaPath);
+        Console.WriteLine("Preserved trim: Offset=" + originalOffset + ", Length=" + eventLength);
     }
-
-
 
     void HideFile(string Filepath)
     {
