@@ -12,12 +12,11 @@ Double click btw!
 
 --------------
 TODO:
-- GUI
-  <br>
-  will let you choose custom settings for ffmpeg! 
 <br>
 ~~- Toggle if no clips are selected to all Proxy or OG clip.~~
 <br>
 ~~- Progress bar~~ (scrapped)
-
+- GUI
+  <br>
+  will let you choose custom settings for ffmpeg! 
     
