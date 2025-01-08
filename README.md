@@ -19,4 +19,4 @@ TODO:
 - GUI
   <br>
   will let you choose custom settings for ffmpeg! 
-    
+- Proxy folder
