@@ -20,3 +20,4 @@ TODO:
   <br>
   will let you choose custom settings for ffmpeg! 
 - Proxy folder
+- icons 
