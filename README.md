@@ -1,6 +1,5 @@
 # ffmveg-revamp
 Made by [Couleur](https://github.com/couleurm). Fixes and qol changes are made by [Me](https://github.com/Vramuser)!!
-<br>
 
 FFmveg is a vegas script that converts a high quality into a lower quality one. So it'll be easier to playback while editing. 
 
@@ -22,6 +21,11 @@ Double click btw!
 
 --------------
 TODO:
+<br>
+~~- Toggle if no clips are selected to all Proxy or OG clip.~~
+<br>
+~~- Progress bar~~ (scrapped)
+- GUI
   <br>
   will let you choose custom settings for ffmpeg! 
 - Proxy folder
