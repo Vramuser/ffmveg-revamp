@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 
 class EntryPoint
 {
+    private const bool CONSOLE_SHOW = true; // Toggle console; "true" or "false" statement.
+
     public void FromVegas(Vegas vegas)
     {
         bool only_selected = true; // Process only selected video events
@@ -36,18 +38,20 @@ class EntryPoint
                     string currentMediaPath = Path.GetFullPath(videoEvent.ActiveTake.MediaPath);
                     string fileName = Path.GetFileName(currentMediaPath);
                     string originalDirectory = Path.GetDirectoryName(currentMediaPath);
-                    string proxyDirectory = Path.Combine(originalDirectory, "proxy");
-
-                    if (!File.Exists(currentMediaPath)) continue;
-
+                    
+                    bool isInProxyFolder = Path.GetFileName(originalDirectory).ToLower() == "proxy"; // Checker
+                    string proxyDirectory = isInProxyFolder ? originalDirectory : Path.Combine(originalDirectory, "proxy");
+                    
                     // Ensure proxy folder exists and is visible
-                    if (!Directory.Exists(proxyDirectory))
+                    if (!isInProxyFolder && !Directory.Exists(proxyDirectory))
                     {
                         Directory.CreateDirectory(proxyDirectory);
                         File.SetAttributes(proxyDirectory, FileAttributes.Normal);
                     }
 
-                    if (fileName.StartsWith(proxy_file_prefix)) // Already a proxy file
+                    if (!File.Exists(currentMediaPath)) continue;
+
+                    if (fileName.StartsWith(proxy_file_prefix)) //Checks if it has a prefix
                     {
                         string originalPath = Path.Combine(Directory.GetParent(originalDirectory).FullName, Regex.Replace(fileName, "^" + proxy_file_prefix, ""));
                         if (File.Exists(originalPath))
@@ -55,7 +59,7 @@ class EntryPoint
                             processedCount++;
                             ReplaceVideo(videoEvent, originalPath);
                         }
-                        else
+                        else if (CONSOLE_SHOW)
                         {
                             Console.WriteLine("Original file not found: " + originalPath);
                         }
@@ -68,14 +72,14 @@ class EntryPoint
                         {
                             if (new FileInfo(proxyPath).Length == 0)
                             {
-                                Console.WriteLine("Deleting empty/corrupted file: " + proxyPath);
+                                if (CONSOLE_SHOW) Console.WriteLine("Deleting empty/corrupted file: " + proxyPath);
                                 File.Delete(proxyPath);
                             }
                         }
                         else
                         {
                             string command = ffmpeg_path + " " + ff_base_args + " -i \"" + currentMediaPath + "\" " +
-                                             ff_filter_args + " " + ff_video_args + " " + ff_audio_args + 
+                                             ff_filter_args + " " + ff_video_args + " " + ff_audio_args +
                                              " \"" + proxyPath + "\"";
                             RunFFmpeg(command);
                         }
@@ -112,14 +116,14 @@ class EntryPoint
         Media newMedia = new Media(newMediaPath);
         if (newMedia == null)
         {
-            Console.WriteLine("Error: Failed to load media from " + newMediaPath);
+            if (CONSOLE_SHOW) Console.WriteLine("Error: Failed to load media from " + newMediaPath);
             return;
         }
 
         MediaStream newMediaStream = newMedia.GetVideoStreamByIndex(0);
         if (newMediaStream == null)
         {
-            Console.WriteLine("Error: No valid video stream found in " + newMediaPath);
+            if (CONSOLE_SHOW) Console.WriteLine("Error: No valid video stream found in " + newMediaPath);
             return;
         }
 
@@ -131,15 +135,18 @@ class EntryPoint
         Take newTake = vidEvent.AddTake(newMediaStream, true);
         if (newTake == null)
         {
-            Console.WriteLine("Error: Failed to create a new take for " + newMediaPath);
+            if (CONSOLE_SHOW) Console.WriteLine("Error: Failed to create a new take for " + newMediaPath);
             return;
         }
 
         newTake.Offset = originalOffset;
         vidEvent.Length = eventLength;
 
-        Console.WriteLine("Replaced media with: " + newMediaPath);
-        Console.WriteLine("Preserved trim: Offset=" + originalOffset + ", Length=" + eventLength);
+        if (CONSOLE_SHOW)
+        {
+            Console.WriteLine("Replaced media with: " + newMediaPath);
+            Console.WriteLine("Preserved trim: Offset=" + originalOffset + ", Length=" + eventLength);
+        }
     }
 
     void RunFFmpeg(string command)
@@ -147,22 +154,17 @@ class EntryPoint
         ProcessStartInfo processInfo = new ProcessStartInfo
         {
             FileName = "cmd.exe",
-            Arguments = "/c " + command,
-            WindowStyle = ProcessWindowStyle.Hidden,
-            CreateNoWindow = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false
+            Arguments = CONSOLE_SHOW ? "/c echo " + command + " & echo. & " + command + " || pause" : "/c " + command,
+            WindowStyle = CONSOLE_SHOW ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden,
+            CreateNoWindow = !CONSOLE_SHOW,
+            RedirectStandardOutput = false,
+            RedirectStandardError = false,
+            UseShellExecute = true
         };
 
         using (Process process = new Process { StartInfo = processInfo })
         {
-            process.OutputDataReceived += (sender, args) => Console.WriteLine(args.Data);
-            process.ErrorDataReceived += (sender, args) => Console.WriteLine("FFmpeg Error: " + args.Data);
-
             process.Start();
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
             process.WaitForExit();
         }
     }
