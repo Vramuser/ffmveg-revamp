@@ -25,6 +25,7 @@ TODO:
 ~~- Toggle if no clips are selected to all Proxy or OG clip.~~ <br>
 ~~- Progress bar~~ (scrapped) <br>
 ~~- icons~~ <br>
+~~- Proxy folder~~ <br>
 - GUI   <br>
   will let you choose custom settings for ffmpeg! 
-- Proxy folder <br>
+
