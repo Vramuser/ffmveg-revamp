@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 class EntryPoint
 {
-    private const bool CONSOLE_SHOW = true; // Toggle console; "true" or "false" statement.
+    private const bool CONSOLE_SHOW = true; // Toggleable console: "true" or "false" statement.
 
     public void FromVegas(Vegas vegas)
     {
