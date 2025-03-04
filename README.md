@@ -26,4 +26,3 @@ TODO:
 ~~- Progress bar~~ (scrapped) <br>
 ~~- icons~~ <br>
 ~~- Proxy folder~~ <br>
-
