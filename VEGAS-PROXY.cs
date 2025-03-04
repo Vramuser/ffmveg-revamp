@@ -1,3 +1,5 @@
+//Script made by Couleur and fixes made by pos.
+//FINAL FORM OF THE SCRIPT. EVERYTHING WAS MADE WITH <3
 using System;
 using System.IO;
 using ScriptPortal.Vegas;
