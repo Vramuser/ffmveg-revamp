@@ -26,6 +26,4 @@ TODO:
 ~~- Progress bar~~ (scrapped) <br>
 ~~- icons~~ <br>
 ~~- Proxy folder~~ <br>
-- GUI   <br>
-  will let you choose custom settings for ffmpeg! 
 
