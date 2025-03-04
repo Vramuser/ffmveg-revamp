@@ -7,92 +7,91 @@ using System.Text.RegularExpressions;
 
 class EntryPoint
 {
+    private const bool CONSOLE_SHOW = true; // Toggleable console: "true" or "false" statement.
+
     public void FromVegas(Vegas vegas)
     {
-        string global_output_folder = "";
-        bool only_selected = true; //Replaces or makes it into a proxy when selected
-        bool hide_proxy_files = true;
-
+        bool only_selected = true; // Process only selected video events
         string proxy_file_prefix = "PROXY-";
         string ffmpeg_path = "ffmpeg.exe";
         string ff_base_args = "-loglevel error -stats";
         string ff_filter_args = "-vf fps=60,scale=960:540:flags=neighbor";
-        string ff_video_args = "-c:v libx264 -tune fastdecode -preset veryfast -g 60 -x264-params bframes=0 -crf 25 -forced-idr 1 -strict -2 -maxrate 100M -bufsize 10M";
+        string ff_video_args = "-c:v libx264 -preset veryfast -crf 25 -g 60 -x264-params bframes=0 -maxrate 100M -bufsize 10M";
         string ff_audio_args = "-an";
 
-        if (!File.Exists(ffmpeg_path) && (GetFullPath(ffmpeg_path) == null))
+        if (GetFullPath(ffmpeg_path) == null)
         {
-            MessageBox.Show(
-                "VEGAS-PROXY: Provided ffmpeg.exe path does not exist\n\nIs it not installed or not in PATH?\n\n See https://ctt.cx/ffmpeg for install instructions");
+            MessageBox.Show("VEGAS-PROXY: ffmpeg.exe not found! Ensure it’s installed and in PATH.\n\nSee https://ctt.cx/ffmpeg for installation instructions.");
             return;
         }
 
-        if (global_output_folder != "" && !Directory.Exists(global_output_folder))
-        {
-            MessageBox.Show("Provided global output folder `" + global_output_folder + "` does not exist, creating it");
-            Directory.CreateDirectory(global_output_folder);
-        }
-
-        int ran = 0;
+        int processedCount = 0;
         foreach (Track track in vegas.Project.Tracks)
         {
             if (track.IsValid() && track.IsVideo() && (only_selected || track.Selected))
             {
                 foreach (TrackEvent trackEvent in track.Events)
                 {
-                    if (!trackEvent.Selected) continue; // Skip unselected events
+                    if (!trackEvent.Selected || !trackEvent.IsVideo()) continue;
 
-                    if (trackEvent.IsVideo())
+                    VideoEvent videoEvent = (VideoEvent)trackEvent;
+                    string currentMediaPath = Path.GetFullPath(videoEvent.ActiveTake.MediaPath);
+                    string fileName = Path.GetFileName(currentMediaPath);
+                    string originalDirectory = Path.GetDirectoryName(currentMediaPath);
+                    
+                    bool isInProxyFolder = Path.GetFileName(originalDirectory).ToLower() == "proxy"; // Checker
+                    string proxyDirectory = isInProxyFolder ? originalDirectory : Path.Combine(originalDirectory, "proxy");
+                    
+                    // Ensure proxy folder exists and is visible
+                    if (!isInProxyFolder && !Directory.Exists(proxyDirectory))
                     {
-                        VideoEvent videoEvent = (VideoEvent)trackEvent;
-                        string currentMediaPath = Path.GetFullPath(videoEvent.ActiveTake.MediaPath);
-                        string Filename = Path.GetFileName(currentMediaPath);
-                        string DirectoryPath = global_output_folder == "" ? Path.GetDirectoryName(currentMediaPath) : global_output_folder;
+                        Directory.CreateDirectory(proxyDirectory);
+                        File.SetAttributes(proxyDirectory, FileAttributes.Normal);
+                    }
 
-                        if (!File.Exists(currentMediaPath))
+                    if (!File.Exists(currentMediaPath)) continue;
+
+                    if (fileName.StartsWith(proxy_file_prefix)) //Checks if it has a prefix
+                    {
+                        string originalPath = Path.Combine(Directory.GetParent(originalDirectory).FullName, Regex.Replace(fileName, "^" + proxy_file_prefix, ""));
+                        if (File.Exists(originalPath))
                         {
-                            continue;
+                            processedCount++;
+                            ReplaceVideo(videoEvent, originalPath);
                         }
-
-                        if (Filename.StartsWith(proxy_file_prefix)) // Already a proxied file
+                        else if (CONSOLE_SHOW)
                         {
-                            string oldPath = DirectoryPath + Path.DirectorySeparatorChar + Regex.Replace(Filename, ("^" + proxy_file_prefix), "");
-                            ran += 1;
-                            ReplaceVideo(videoEvent, oldPath);
+                            Console.WriteLine("Original file not found: " + originalPath);
+                        }
+                    }
+                    else
+                    {
+                        string proxyPath = Path.Combine(proxyDirectory, proxy_file_prefix + fileName);
+
+                        if (File.Exists(proxyPath))
+                        {
+                            if (new FileInfo(proxyPath).Length == 0)
+                            {
+                                if (CONSOLE_SHOW) Console.WriteLine("Deleting empty/corrupted file: " + proxyPath);
+                                File.Delete(proxyPath);
+                            }
                         }
                         else
                         {
-                            string outPath = DirectoryPath + Path.DirectorySeparatorChar + proxy_file_prefix + Filename;
-
-                            if (File.Exists(outPath))
-                            {
-                                if ((new FileInfo(outPath).Length) == 0)
-                                {
-                                    MessageBox.Show("Deleting empty corrupted file: " + outPath);
-                                    File.Delete(outPath);
-                                }
-                            }
-                            else
-                            {
-                                string command = ffmpeg_path + " " + ff_base_args + " -i \"" + currentMediaPath + "\" " + 
-                                                 " " + ff_filter_args + " " + ff_video_args + " " + ff_audio_args + 
-                                                 " \"" + outPath + "\"";
-                                SmoothieInit(command);
-                            }
-
-                            ran += 1;
-                            ReplaceVideo(videoEvent, outPath);
-                            if (hide_proxy_files)
-                            {
-                                HideFile(outPath);
-                            }
+                            string command = ffmpeg_path + " " + ff_base_args + " -i \"" + currentMediaPath + "\" " +
+                                             ff_filter_args + " " + ff_video_args + " " + ff_audio_args +
+                                             " \"" + proxyPath + "\"";
+                            RunFFmpeg(command);
                         }
+
+                        processedCount++;
+                        ReplaceVideo(videoEvent, proxyPath);
                     }
                 }
             }
         }
 
-        if (ran == 0)
+        if (processedCount == 0)
         {
             MessageBox.Show("No selected videos to process. Highlight the clips on your timeline before running VEGAS-PROXY.");
         }
@@ -103,8 +102,7 @@ class EntryPoint
         if (File.Exists(fileName))
             return Path.GetFullPath(fileName);
 
-        var values = Environment.GetEnvironmentVariable("PATH");
-        foreach (var path in values.Split(Path.PathSeparator))
+        foreach (var path in Environment.GetEnvironmentVariable("PATH").Split(Path.PathSeparator))
         {
             var fullPath = Path.Combine(path, fileName);
             if (File.Exists(fullPath))
@@ -116,47 +114,58 @@ class EntryPoint
     void ReplaceVideo(VideoEvent vidEvent, string newMediaPath)
     {
         Media newMedia = new Media(newMediaPath);
-        MediaStream newMediaStream = newMedia.GetVideoStreamByIndex(0);
+        if (newMedia == null)
+        {
+            if (CONSOLE_SHOW) Console.WriteLine("Error: Failed to load media from " + newMediaPath);
+            return;
+        }
 
-        // Save the current trim information
+        MediaStream newMediaStream = newMedia.GetVideoStreamByIndex(0);
+        if (newMediaStream == null)
+        {
+            if (CONSOLE_SHOW) Console.WriteLine("Error: No valid video stream found in " + newMediaPath);
+            return;
+        }
+
         Timecode originalOffset = vidEvent.ActiveTake.Offset;
         Timecode eventLength = vidEvent.Length;
 
-        // Remove all existing takes
-        while (vidEvent.Takes.Count > 0)
+        vidEvent.Takes.Clear();
+
+        Take newTake = vidEvent.AddTake(newMediaStream, true);
+        if (newTake == null)
         {
-            vidEvent.Takes.RemoveAt(0);
+            if (CONSOLE_SHOW) Console.WriteLine("Error: Failed to create a new take for " + newMediaPath);
+            return;
         }
 
-        // Add a new take using the new media stream
-        Take newTake = vidEvent.AddTake(newMediaStream, true);
-
-        // Reapply the original offset and length to the new take
         newTake.Offset = originalOffset;
         vidEvent.Length = eventLength;
 
-        Console.WriteLine("Replaced media with: " + newMediaPath);
-        Console.WriteLine("Preserved trim: Offset=" + originalOffset + ", Length=" + eventLength);
-    }
-
-    void HideFile(string Filepath)
-    {
-        FileAttributes attributes = File.GetAttributes(Filepath);
-        File.SetAttributes(Filepath, File.GetAttributes(Filepath) | FileAttributes.Hidden);
-    }
-
-    void SmoothieInit(string Args)
-    {
-        Process process = new Process();
-        process.StartInfo.FileName = "cmd.exe";
-        process.StartInfo.Arguments = "/c echo " + Args + " & echo. & " + Args + " || pause";
-        process.StartInfo.WindowStyle = ProcessWindowStyle.Normal;
-        process.StartInfo.CreateNoWindow = false;
-        process.Start();
-        process.WaitForExit();
-        if (process.ExitCode != 0)
+        if (CONSOLE_SHOW)
         {
-            return;
+            Console.WriteLine("Replaced media with: " + newMediaPath);
+            Console.WriteLine("Preserved trim: Offset=" + originalOffset + ", Length=" + eventLength);
+        }
+    }
+
+    void RunFFmpeg(string command)
+    {
+        ProcessStartInfo processInfo = new ProcessStartInfo
+        {
+            FileName = "cmd.exe",
+            Arguments = CONSOLE_SHOW ? "/c echo " + command + " & echo. & " + command + " || pause" : "/c " + command,
+            WindowStyle = CONSOLE_SHOW ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden,
+            CreateNoWindow = !CONSOLE_SHOW,
+            RedirectStandardOutput = false,
+            RedirectStandardError = false,
+            UseShellExecute = true
+        };
+
+        using (Process process = new Process { StartInfo = processInfo })
+        {
+            process.Start();
+            process.WaitForExit();
         }
     }
 }
