@@ -1,4 +1,5 @@
 # ffmveg-revamp
+# **FINAL UPDATE**
 Made by [Couleur](https://github.com/couleurm). Fixes and qol changes are made by [Me](https://github.com/Vramuser)!!
 
 FFmveg is a vegas script that converts a high quality into a lower quality one. So it'll be easier to playback while editing. 
