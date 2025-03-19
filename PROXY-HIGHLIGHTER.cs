@@ -13,38 +13,51 @@ class EntryPoint
 
         foreach (Track track in vegas.Project.Tracks)
         {
-            if (track.IsVideo())
-            {
-                foreach (TrackEvent trackEvent in track.Events)
-                {
-                    if (trackEvent.IsVideo())
-                    {
-                        VideoEvent videoEvent = (VideoEvent)trackEvent;
-                        string currentMediaPath = videoEvent.ActiveTake.MediaPath;
-                        string filename = Path.GetFileName(currentMediaPath);
+            if (!track.IsVideo()) continue; // Checks if its a Video
 
-                        // Check if the file has the "PROXY-" prefix
-                        if (filename.StartsWith(proxy_file_prefix, StringComparison.OrdinalIgnoreCase))
-                        {
-                            trackEvent.Selected = true;
-                            proxyCount++;
-                        }
-                        else
-                        {
-                            trackEvent.Selected = false;
-                        }
-                    }
+            foreach (TrackEvent trackEvent in track.Events)
+            {
+                if (!trackEvent.IsVideo()) continue; // Will add the video to a list to check
+
+                VideoEvent videoEvent = (VideoEvent)trackEvent;
+                Take activeTake = videoEvent.ActiveTake;
+
+                // Ensure there is an active take
+                if (activeTake == null || activeTake.Media == null) continue;
+
+                string currentMediaPath = activeTake.MediaPath;
+
+                // Validate media path
+                if (string.IsNullOrEmpty(currentMediaPath) || !File.Exists(currentMediaPath)) continue;
+
+                string filename;
+                try
+                {
+                    filename = Path.GetFileName(currentMediaPath);
+                }
+                catch
+                {
+                    continue;
+                }
+
+                // Check if the file has the "PROXY-" prefix
+                if (filename.StartsWith(proxy_file_prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    trackEvent.Selected = true;
+                    proxyCount++;
+                }
+                else
+                {
+                    trackEvent.Selected = false;
                 }
             }
         }
 
-        if (proxyCount > 0)
-        {
-            MessageBox.Show(proxyCount + " All clips with PROXY- prefix have been selected. ", "Proxy Highlighter");
-        }
-        else
-        {
-            MessageBox.Show("None where found! :D", "Proxy Highlighter");
-        }
+        // Box shows with number of videos with the prefix
+        string message = proxyCount > 0
+            ? string.Format("{0} proxy clips have been selected.", proxyCount)
+            : "No proxy clips found!";
+
+        MessageBox.Show(message, "Proxy Highlighter");
     }
 }
