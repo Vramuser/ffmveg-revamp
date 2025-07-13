@@ -1,29 +1,33 @@
-# ffmveg-revamp
-# **FINAL UPDATE**
-Made by [Couleur](https://github.com/couleurm). Fixes and qol changes are made by [Me](https://github.com/Vramuser)!!
+# FFmveg Revamp
+## **Final Update**
 
-FFmveg is a vegas script that converts a high quality into a lower quality one. So it'll be easier to playback while editing. 
+Created by [Couleur](https://github.com/couleurm). Fixes and quality-of-life changes made by [Me](https://github.com/Vramuser)!
 
-Basic uses:
+FFmveg is a Vegas script designed to convert high-quality video clips into lower-quality versions for easier playback during editing.
 
-To use it, highlight clips on your timeline, then hit the button to activate the script so it can convert. <br>
-High the clip with the "proxy-" prefix and activate the script again so it can replace the original clip. <br>
-Tip! Use the "PROXY-HIGHLIGHTER.cs" script to make changing the clips easier! 
+### Basic Usage:
 
-How to install: 
-1. Make a folder in `Documents` titled/named `Vegas Script Menu`
-2. Drag the .cs file into that folder
-3. Open up vegas and goto the tools tab and scripting, and it should be there!
---------------
-To make it easier to use the script. Add it to the toolbar.
-Double click btw! 
+1. **Highlight Clips**: Select the clips on your timeline that you want to convert.
+2. **Activate the Script**: Click the button to run the script and convert the selected clips.
+3. **Replace Original Clips**: Highlight the clips with the "proxy-" prefix and activate the script again to replace the original clips.
+
+**Tip**: Use the "PROXY-HIGHLIGHTER.cs" script to highlight the scripts easily!
+
+### Installation Instructions:
+
+1. Create a folder in `Documents` named `Vegas Script Menu`.
+2. Drag the `.cs` file into that folder.
+3. Open Vegas, go to the Tools tab, and select Scripting. The script should appear there!
+
+### Adding to the Toolbar:
+
+To make the script easier to access, add it to your toolbar. Just double-click to add!
 
 ![ToolBar](https://github.com/user-attachments/assets/825a3f27-39bf-45db-b92b-4ebf77c51bd5)
 
---------------
-TODO:
+### TODO:
 
-~~- Toggle if no clips are selected to all Proxy or OG clip.~~ <br>
-~~- Progress bar~~ (scrapped) <br>
-~~- icons~~ <br>
-~~- Proxy folder~~ <br>
+- ~~Toggle if no clips are selected to apply to all Proxy or Original clips.~~
+- ~~Progress bar~~ (scrapped)
+- ~~Icons~~
+- ~~Proxy folder~~
